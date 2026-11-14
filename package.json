@@ -1,0 +1,14 @@
+{
+  "name": "m1a2-abrams-webgl",
+  "private": true,
+  "type": "module",
+  "description": "Процедурная 3D-модель M1A2 Abrams на чистом WebGL2",
+  "scripts": {
+    "start": "node tools/serve.mjs 8080",
+    "shots": "node tools/shoot.mjs http://127.0.0.1:8080/ shots"
+  },
+  "devDependencies": {
+    "@sparticuz/chromium": "^153.0.0",
+    "playwright-core": "^1.65.1"
+  }
+}

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M1A2 Abrams — процедурный WebGL</title>
+<style>
+  :root { --fg:#e9e2d4; --dim:#9a927f; --line:rgba(233,226,212,.14); --acc:#c9a66b; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:#1b1a18; color:var(--fg); font:13px/1.35 ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, sans-serif; overflow:hidden; }
+  canvas { position:fixed; inset:0; width:100vw; height:100vh; display:block; touch-action:none; cursor:grab; }
+  canvas:active { cursor:grabbing; }
+  .hud { position:fixed; left:18px; top:16px; pointer-events:none; }
+  .hud h1 { margin:0; font-size:17px; letter-spacing:.14em; font-weight:650; }
+  .hud p { margin:3px 0 0; color:var(--dim); font-size:12px; letter-spacing:.04em; }
+  .panel { position:fixed; left:50%; bottom:16px; transform:translateX(-50%); display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:center;
+    padding:10px 14px; background:rgba(20,19,17,.72); border:1px solid var(--line); border-radius:10px; backdrop-filter:blur(8px); max-width:calc(100vw - 24px); }
+  .row { display:flex; gap:5px; align-items:center; }
+  button { font:inherit; color:var(--fg); background:transparent; border:1px solid var(--line); border-radius:6px; padding:6px 10px; cursor:pointer; }
+  button:hover { border-color:rgba(233,226,212,.4); }
+  button.on { background:var(--acc); border-color:var(--acc); color:#1b1a18; font-weight:600; }
+  label { color:var(--dim); display:flex; gap:8px; align-items:center; white-space:nowrap; }
+  label b { color:var(--fg); font-weight:500; min-width:38px; text-align:right; font-variant-numeric:tabular-nums; }
+  input[type=range] { width:130px; accent-color:var(--acc); }
+  .hint { position:fixed; right:18px; top:16px; color:var(--dim); font-size:12px; text-align:right; pointer-events:none; }
+  #err { display:none; position:fixed; inset:auto 20px 90px 20px; padding:12px; background:#5a1d1d; border-radius:8px; white-space:pre-wrap; font-family:monospace; max-height:50vh; overflow:auto; }
+  body.noui .hud, body.noui .panel, body.noui .hint { display:none; }
+  @media (max-width:720px) { .hint { display:none; } input[type=range] { width:96px; } }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="hud">
+  <h1>M1A2 ABRAMS</h1>
+  <p>CARC Tan 686A · процедурная геометрия · чистый WebGL2</p>
+  <p id="stats"></p>
+</div>
+<div class="hint">ЛКМ — вращение · ПКМ / Shift — сдвиг · колесо — масштаб<br>клавиши 1–6 — ракурсы</div>
+<div class="panel">
+  <div class="row">
+    <button data-view="hero">3/4</button>
+    <button data-view="side">Профиль</button>
+    <button data-view="top">Сверху</button>
+    <button data-view="front">Спереди</button>
+    <button data-view="turret">Башня</button>
+    <button data-view="rear">Корма</button>
+    <button id="auto">Вращение</button>
+  </div>
+  <label>Башня <input id="turret" type="range" min="-180" max="180" value="0" step="1"><b id="turretV">0°</b></label>
+  <label>Ствол <input id="gunel" type="range" min="-9" max="20" value="0" step="1"><b id="gunV">0°</b></label>
+</div>
+<div id="err"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
