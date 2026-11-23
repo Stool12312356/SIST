@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DummyWar (CombatSandbox) — Полный разбор архитектуры и кода</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-2: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-2: #3fb950;
+      --warn: #d29922;
+      --danger: #f85149;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+    .search-box {
+      flex: 1;
+      max-width: 420px;
+      min-width: 240px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    .search-box input:focus {
+      border-color: var(--accent);
+    }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .arch-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .arch-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 15px;
+      color: var(--accent);
+    }
+    .arch-card p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab:hover { border-color: var(--accent); }
+    .tab.active {
+      background: var(--accent);
+      color: #0d1117;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .stats {
+      margin-bottom: 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .class-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .ns {
+      font-size: 11px;
+      color: var(--purple);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .counts {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .counts span strong { color: var(--text); }
+    details {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    summary {
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      user-select: none;
+    }
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 5px;
+      color: var(--text);
+    }
+    .pill.method { border-color: #264f78; color: #79c0ff; }
+    .pill.field { border-color: #2ea04355; color: #7ee787; }
+    @media (max-width: 600px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <h1>DummyWar / CombatSandbox — Полный разбор кода</h1>
+        <div class="subtitle">Сборка Assembly-CSharp.dll • 171 класс • 2 пространства имён</div>
+      </div>
+      <div class="search-box">
+        <input id="search" type="text" placeholder="Поиск по классам, полям и методам..." />
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="arch-grid">
+      <div class="arch-card">
+        <h3>1. Запуск и поток сцен</h3>
+        <p><strong>BootSequence</strong> (логотип, лицензия) → <strong>GameMenu / BattleSetup</strong> → <strong>SceneFlow</strong> (переключение сцен) → <strong>BattleDirector</strong>.</p>
+      </div>
+      <div class="arch-card">
+        <h3>2. Бой и режимы</h3>
+        <p><strong>BattleDirector</strong> управляет спавном, командами, камерой и временем. <strong>CaptureMode</strong> и <strong>CapturePoint</strong> ведут захват точек, тикеты и волны.</p>
+      </div>
+      <div class="arch-card">
+        <h3>3. Персонаж, рэгдолл и ИИ</h3>
+        <p><strong>ActiveBody</strong> + <strong>RagdollBody</strong> + <strong>JointMotor</strong> дают активный рэгдолл. <strong>CombatBrain</strong> управляет тактикой, навигацией и стрельбой.</p>
+      </div>
+      <div class="arch-card">
+        <h3>4. Физиология и медицина</h3>
+        <p><strong>Anatomy / HitZone / Organ</strong> → <strong>FleshDamage</strong> → <strong>WoundBleeding</strong> → <strong>Physiology</strong> (кровь, пульс, гипоксия, шок) → <strong>FieldDressings</strong>.</p>
+      </div>
+      <div class="arch-card">
+        <h3>5. Баллистика и оружие</h3>
+        <p><strong>WeaponCatalog / CarriedRifle</strong> → <strong>Ballistics</strong> (полёт, рикошеты, стёкла, осколки) → <strong>ShotEffects / Acoustics</strong>.</p>
+      </div>
+      <div class="arch-card">
+        <h3>6. Техника, дроны и кровь</h3>
+        <p><strong>Vehicle</strong> (Btr, M113, Buggy, QuadBike), дроны (<strong>AirDrone, BomberDrone, FpvDrone</strong>) и симуляция крови (<strong>BloodField, BloodDroplets</strong>).</p>
+      </div>
+    </section>
+
+    <div class="tabs" id="tabs"></div>
+    <div class="stats" id="stats"></div>
+    <div class="cards" id="cards"></div>
+  </main>
+
+  <script>
+    let allClasses = [];
+    let activeCategory = 'Все';
+    let query = '';
+
+    async function init() {
+      const res = await fetch('data.json');
+      allClasses = await res.json();
+      renderTabs();
+      renderCards();
+    }
+
+    function renderTabs() {
+      const counts = { 'Все': allClasses.length };
+      for (const c of allClasses) {
+        counts[c.category] = (counts[c.category] || 0) + 1;
+      }
+      const tabsEl = document.getElementById('tabs');
+      tabsEl.innerHTML = '';
+      for (const [cat, count] of Object.entries(counts)) {
+        const btn = document.createElement('button');
+        btn.className = 'tab' + (cat === activeCategory ? ' active' : '');
+        btn.textContent = `${cat} (${count})`;
+        btn.onclick = () => {
+          activeCategory = cat;
+          renderTabs();
+          renderCards();
+        };
+        tabsEl.appendChild(btn);
+      }
+    }
+
+    function renderCards() {
+      const q = query.trim().toLowerCase();
+      const filtered = allClasses.filter(c => {
+        if (activeCategory !== 'Все' && c.category !== activeCategory) return false;
+        if (!q) return true;
+        if (c.name.toLowerCase().includes(q) || c.namespace.toLowerCase().includes(q)) return true;
+        if (c.fields.some(f => f.toLowerCase().includes(q))) return true;
+        if (c.methods.some(m => m.toLowerCase().includes(q))) return true;
+        return false;
+      });
+
+      document.getElementById('stats').textContent = `Показано классов: ${filtered.length} из ${allClasses.length}`;
+      const cardsEl = document.getElementById('cards');
+      cardsEl.innerHTML = '';
+
+      for (const c of filtered) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-header">
+            <div>
+              <div class="ns">${c.namespace}</div>
+              <div class="class-name">${c.name}</div>
+            </div>
+            <span class="badge">${c.category}</span>
+          </div>
+          <div class="counts">
+            <span>Поля: <strong>${c.fields.length}</strong></span>
+            <span>Методы: <strong>${c.methods.length}</strong></span>
+          </div>
+          ${c.fields.length ? `
+            <details>
+              <summary>Поля (${c.fields.length})</summary>
+              <div class="pill-list">${c.fields.map(f => `<span class="pill field">${f}</span>`).join('')}</div>
+            </details>
+          ` : ''}
+          ${c.methods.length ? `
+            <details>
+              <summary>Методы (${c.methods.length})</summary>
+              <div class="pill-list">${c.methods.map(m => `<span class="pill method">${m}</span>`).join('')}</div>
+            </details>
+          ` : ''}
+        `;
+        cardsEl.appendChild(card);
+      }
+    }
+
+    document.getElementById('search').addEventListener('input', (e) => {
+      query = e.target.value;
+      renderCards();
+    });
+
+    init();
+  </script>
+</body>
+</html>
